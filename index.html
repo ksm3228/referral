@@ -65,9 +65,6 @@
     padding: 10px 12px;
     width: 100%;
     background: var(--bg);
-    position: sticky;
-    top: 51px; /* 슬림해진 헤더 높이에 맞춤 */
-    z-index: 99;
     border-bottom: 1px solid var(--border);
   }
   .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 8px; flex: 1; min-width: 0; text-align: center; }
@@ -78,8 +75,16 @@
   .stat-num.not-yet { color: var(--danger); }
   .stat-num.done { color: var(--accent); }
 
-  .toolbar { display: flex; gap: 10px; padding: 8px 12px; background: var(--bg); position: sticky; top: 121px; z-index: 98; border-bottom: 1px solid var(--border); flex-wrap: wrap; align-items: center; }
-  .search-wrap { position: relative; flex: 1; min-width: 200px; }
+  .toolbar { 
+   display: flex; gap: 10px; 
+   padding: 8px 12px; 
+   background: var(--bg); 
+   border-bottom: 1px solid var(--border); 
+   flex-wrap: wrap; 
+   align-items: center; 
+  }
+  
+ .search-wrap { position: relative; flex: 1; min-width: 200px; }
   .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text3); font-size: 15px; pointer-events: none; }
   .toolbar input[type=text] { width: 100%; padding: 8px 12px 8px 34px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; background: var(--surface); color: var(--text); outline: none; font-family: inherit; }
   .toolbar input[type=text]:focus { border-color: var(--accent); }
@@ -176,7 +181,7 @@ table { width: 100%; border-collapse: collapse; font-size: 13px; }
     <div class="header-left">
       <span class="hospital-emoji">🏥</span>
       <h1>타과 의뢰 환자 명단</h1>
-      <button class="version-badge" id="version-badge">v6.4</button>
+      <button class="version-badge" id="version-badge">v6.5</button>
       <div class="header-date" id="header-sub"></div>
     </div>
     <div class="user-info">
