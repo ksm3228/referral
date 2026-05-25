@@ -495,16 +495,18 @@ if (!snap.exists()) {
   await new Promise(r => setTimeout(r, 1000));
 }
 
-// 실시간 데이터 리스너
-onValue(ref(db, 'referral'), (snap) => {
-      allData = [];
-      if (snap.exists()) {
-        snap.forEach(child => allData.push({ _key: child.key, ...child.val() }));
-        allData.sort((a, b) => a.date > b.date ? 1 : -1);
-      }
-      console.log('데이터 로드됨:', allData.length, '개');
-      render();
-    });
+// get으로 전체 데이터 읽기
+async function loadAllData() {
+  const snap = await get(ref(db, 'referral'));
+  allData = [];
+  if (snap.exists()) {
+    snap.forEach(child => allData.push({ _key: child.key, ...child.val() }));
+    allData.sort((a, b) => a.date > b.date ? 1 : -1);
+  }
+  console.log('데이터 로드됨:', allData.length, '개');
+  render();
+}
+loadAllData();
 
     initVersionBadge();
   } else {
