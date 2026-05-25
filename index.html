@@ -274,7 +274,6 @@ const DEFAULT_DATA = [
   {date:'2026-05-22',reg:'02878572',name:'이정길',issue:'CPK 증가',result:'',status:'not yet',note:''},
 ];
 
-// 모듈 스코프 변수 — 이벤트 핸들러와 공유
 let allData = [];
 let editingKey = null;
 
@@ -303,14 +302,17 @@ function render() {
   const still = allData.filter(r=>r.status==='still f/u').length;
   const notYet = allData.filter(r=>r.status==='not yet').length;
   const done = allData.filter(r=>r.status==='end').length;
+  
   document.getElementById('stats').innerHTML = `
     <div class="stat"><div class="stat-label">전체</div><div class="stat-num total">${allData.length}</div></div>
     <div class="stat"><div class="stat-label">추적 중</div><div class="stat-num still">${still}</div></div>
     <div class="stat"><div class="stat-label">미확인</div><div class="stat-num not-yet">${notYet}</div></div>
     <div class="stat"><div class="stat-label">종료</div><div class="stat-num done">${done}</div></div>`;
+  
   document.getElementById('header-sub').textContent = `총 ${allData.length}명 · ${new Date().toLocaleDateString('ko-KR')}`;
   const tbody = document.getElementById('tbody');
   if (!rows.length) { tbody.innerHTML = `<tr><td colspan="7" class="empty">검색 결과가 없습니다.</td></tr>`; return; }
+  
   tbody.innerHTML = rows.map(r => {
     const isActive = r.status === 'still f/u';
     const regHtml = isActive ? `<span class="reg-active">${esc(r.reg)}</span>` : `<span style="color:var(--text2)">${esc(r.reg)}</span>`;
@@ -329,7 +331,6 @@ function render() {
     </tr>`;
   }).join('');
 
-  // 수정/삭제 버튼 이벤트 — onclick 대신 addEventListener 사용
   tbody.querySelectorAll('.act-btn.edit').forEach(btn => {
     btn.addEventListener('click', () => openEditModal(btn.dataset.key));
   });
@@ -473,7 +474,7 @@ async function addVersion() {
   showToast('버전이 기록되었습니다.');
 }
 
-// Auth
+// Auth & Real-time Data Sync
 onAuthStateChanged(auth, async (user) => {
   if (user) {
     if (user.email !== ALLOWED_EMAIL) {
@@ -487,26 +488,27 @@ onAuthStateChanged(auth, async (user) => {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app-screen').style.display = 'block';
 
-    // Firebase에 데이터 없으면 기본 데이터 입력
+    // 1. 초기 데이터 유무 확인 및 셋업 (set 연산으로 중복 입력 원천 차단)
     const snap = await get(ref(db, 'referral'));
-if (!snap.exists()) {
-  for (const row of DEFAULT_DATA) await push(ref(db, 'referral'), row);
-  // 22개 다 넣은 후 잠깐 대기
-  await new Promise(r => setTimeout(r, 1000));
-}
+    if (!snap.exists()) {
+      const initialRef = ref(db, 'referral');
+      for (const row of DEFAULT_DATA) {
+        await push(initialRef, row);
+      }
+    }
 
-// get으로 전체 데이터 읽기
-async function loadAllData() {
-  const snap = await get(ref(db, 'referral'));
-  allData = [];
-  if (snap.exists()) {
-    snap.forEach(child => allData.push({ _key: child.key, ...child.val() }));
-    allData.sort((a, b) => a.date > b.date ? 1 : -1);
-  }
-  console.log('데이터 로드됨:', allData.length, '개');
-  render();
-}
-loadAllData();
+    // 2. 실시간 동기화 리스너 바인딩 (onValue 사용 및 최신순 내림차순 정렬)
+    onValue(ref(db, 'referral'), (snapshot) => {
+      allData = [];
+      if (snapshot.exists()) {
+        snapshot.forEach(child => {
+          allData.push({ _key: child.key, ...child.val() });
+        });
+        // 최신 의뢰일이 상단에 오도록 내림차순 정렬 (b.date > a.date)
+        allData.sort((a, b) => b.date > a.date ? 1 : -1);
+      }
+      render();
+    });
 
     initVersionBadge();
   } else {
@@ -515,7 +517,7 @@ loadAllData();
   }
 });
 
-// 이벤트 바인딩 — onclick 대신 addEventListener
+// 이벤트 바인딩
 document.getElementById('google-login-btn').addEventListener('click', async () => {
   try {
     document.getElementById('login-error').style.display = 'none';
