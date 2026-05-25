@@ -114,6 +114,18 @@
     .main { padding: 12px 10px 60px; }
     .user-email { display: none; }
   }
+
+
+.version-badge { font-size: 11px; color: var(--text3); background: var(--surface2); border: 1px solid var(--border); border-radius: 5px; padding: 2px 8px; cursor: pointer; font-family: var(--mono); }
+.version-badge:hover { border-color: var(--border2); color: var(--text2); }
+.changelog-list { max-height: 260px; overflow-y: auto; margin-bottom: 14px; }
+.changelog-item { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; align-items: flex-start; }
+.changelog-item:last-child { border-bottom: none; }
+.changelog-ver { font-family: var(--mono); font-size: 11px; background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 1px 6px; white-space: nowrap; color: var(--text2); min-width: 48px; text-align: center; }
+.changelog-date { font-size: 11px; color: var(--text3); white-space: nowrap; }
+.changelog-note { flex: 1; color: var(--text); }
+.changelog-empty { text-align: center; color: var(--text3); font-size: 13px; padding: 20px 0; }
+ 
 </style>
 </head>
 <body>
@@ -139,6 +151,7 @@
   <header>
     <div>
       <h1>타과 의뢰 환자 명단</h1>
+     <button class="version-badge" id="version-badge" onclick="openVersionModal()">v1.0</button>
       <div class="sub" id="header-sub">로딩 중...</div>
     </div>
     <div class="user-info">
@@ -211,6 +224,30 @@
   </div>
 </div>
 
+<!-- Version Modal -->
+<div class="modal-overlay" id="version-modal">
+  <div class="modal">
+    <h3>버전 관리</h3>
+    <div style="display:flex;gap:8px;margin-bottom:14px">
+      <div class="form-row" style="flex:0 0 80px;margin:0">
+        <label>버전</label>
+        <input type="text" id="v-ver" placeholder="v1.1">
+      </div>
+      <div class="form-row" style="flex:1;margin:0">
+        <label>변경 내용</label>
+        <input type="text" id="v-note" placeholder="예: 이정길 환자 결과 추가">
+      </div>
+      <div style="display:flex;align-items:flex-end">
+        <button class="btn primary" onclick="addVersion()" style="white-space:nowrap">추가</button>
+      </div>
+    </div>
+    <div class="changelog-list" id="changelog-list"></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeVersionModal()">닫기</button>
+    </div>
+  </div>
+</div>
+ 
 <div class="toast" id="toast"></div>
 
 <script type="module">
@@ -264,6 +301,73 @@ const DEFAULT_DATA = [
 
 let allData = [], editingKey = null;
 
+ // Version
+async function loadVersions() {
+  const snap = await get(ref(db, 'changelog'));
+  const versions = [];
+  if (snap.exists()) {
+    snap.forEach(child => versions.push({ _key: child.key, ...child.val() }));
+    versions.sort((a, b) => b.ts - a.ts);
+  }
+  return versions;
+}
+
+function renderChangelog(versions) {
+  const el = document.getElementById('changelog-list');
+  if (!versions.length) { el.innerHTML = `<div class="changelog-empty">변경 이력이 없습니다.</div>`; return; }
+  el.innerHTML = versions.map(v => `
+    <div class="changelog-item">
+      <span class="changelog-ver">${esc(v.ver)}</span>
+      <span class="changelog-date">${new Date(v.ts).toLocaleDateString('ko-KR')}</span>
+      <span class="changelog-note">${esc(v.note)}</span>
+      <button class="act-btn del" onclick="delVersion('${v._key}')" style="flex-shrink:0">삭제</button>
+    </div>`).join('');
+  // 최신 버전을 배지에 표시
+  if (versions[0]) document.getElementById('version-badge').textContent = versions[0].ver;
+}
+
+window.openVersionModal = async () => {
+  document.getElementById('version-modal').classList.add('open');
+  const versions = await loadVersions();
+  renderChangelog(versions);
+  // 다음 버전 자동 제안
+  if (versions[0]) {
+    const last = versions[0].ver.replace('v','');
+    const parts = last.split('.');
+    parts[parts.length-1] = String(Number(parts[parts.length-1]||0) + 1);
+    document.getElementById('v-ver').value = 'v' + parts.join('.');
+  } else {
+    document.getElementById('v-ver').value = 'v1.0';
+  }
+};
+
+window.closeVersionModal = () => document.getElementById('version-modal').classList.remove('open');
+
+window.addVersion = async () => {
+  const ver = document.getElementById('v-ver').value.trim();
+  const note = document.getElementById('v-note').value.trim();
+  if (!ver || !note) { showToast('버전과 내용을 입력해주세요.', true); return; }
+  await push(ref(db, 'changelog'), { ver, note, ts: Date.now() });
+  document.getElementById('v-note').value = '';
+  const versions = await loadVersions();
+  renderChangelog(versions);
+  showToast('버전이 기록되었습니다.');
+};
+
+window.delVersion = async (key) => {
+  if (!confirm('이 버전 기록을 삭제하시겠습니까?')) return;
+  await remove(ref(db, `changelog/${key}`));
+  const versions = await loadVersions();
+  renderChangelog(versions);
+  showToast('삭제되었습니다.');
+};
+
+// 앱 로드 시 버전 배지 초기화
+async function initVersionBadge() {
+  const versions = await loadVersions();
+  if (versions[0]) document.getElementById('version-badge').textContent = versions[0].ver;
+}
+
 onAuthStateChanged(auth, async (user) => {
   if (user) {
     if (user.email !== ALLOWED_EMAIL) {
@@ -278,6 +382,8 @@ onAuthStateChanged(auth, async (user) => {
     showScreen('app');
     await initData();
     listenData();
+   initVersionBadge();
+
   } else {
     showScreen('login');
   }
