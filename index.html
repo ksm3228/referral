@@ -176,7 +176,7 @@ table { width: 100%; border-collapse: collapse; font-size: 13px; }
     <div class="header-left">
       <span class="hospital-emoji">🏥</span>
       <h1>타과 의뢰 환자 명단</h1>
-      <button class="version-badge" id="version-badge">v6.2</button>
+      <button class="version-badge" id="version-badge">v6.3</button>
       <div class="header-date" id="header-sub"></div>
     </div>
     <div class="user-info">
@@ -184,7 +184,7 @@ table { width: 100%; border-collapse: collapse; font-size: 13px; }
       <span class="user-email" id="user-email"></span>
       <button class="logout-btn" id="logout-btn">로그아웃</button>
       <div class="header-actions">
-        <button class="btn" id="csv-btn">📥 CSV</button>
+        
         <button class="btn primary" id="add-btn">+ 새 환자</button>
       </div>
     </div>
@@ -504,7 +504,7 @@ document.getElementById('google-login-btn').addEventListener('click', async () =
 });
 document.getElementById('logout-btn').addEventListener('click', () => fbSignOut(auth));
 document.getElementById('add-btn').addEventListener('click', openAddModal);
-document.getElementById('csv-btn').addEventListener('click', exportCSV);
+
 document.getElementById('version-badge').addEventListener('click', openVersionModal);
 document.getElementById('modal-cancel').addEventListener('click', () => document.getElementById('modal-overlay').classList.remove('open'));
 document.getElementById('modal-save').addEventListener('click', saveRow);
