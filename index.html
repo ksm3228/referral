@@ -25,26 +25,98 @@
   .google-btn svg { width: 18px; height: 18px; flex-shrink: 0; }
   .login-error { margin-top: 14px; font-size: 12px; color: var(--danger); display: none; }
   #app-screen { display: none; }
-  header { 
+  
+ header { 
   background: var(--surface); 
   border-bottom: 1px solid var(--border); 
-  padding: 14px 24px; 
+  padding: 10px 16px;      /* 위아래 여백을 줄여 더 슬림하게 */
   display: flex; 
   align-items: center; 
-  gap: 12px; 
+  justify-content: space-between; /* 왼쪽 타이틀군과 오른쪽 버튼군을 양끝으로 */
   position: sticky; 
   top: 0; 
-  z-index: 100; /* 50에서 100으로 상향 */
+  z-index: 100;
+  gap: 12px;
 }
-  header h1 { font-size: 17px; font-weight: 600; }
+
+ /* 왼쪽 타이틀 + 이모지 + 버전 + 날짜 정렬 그룹 */
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;                /* 요소 간격 좁게 유지 */
+  flex-shrink: 0;          /* 모바일에서 이 영역이 찌그러지지 않도록 고정 */
+}
+
+ /* 병원 이모지 스타일 */
+.hospital-emoji {
+  font-size: 20px;
+  line-height: 1;
+}
+ 
+  /* 메인 제목: 절대 줄바꿈 안 되게 처리 */
+header h1 { 
+  font-size: 16px; 
+  font-weight: 700; 
+  color: #1a1917;
+  white-space: nowrap;     /* 모바일에서도 한 줄로 고정 */
+  margin: 0;
+}
+ 
   header .sub { font-size: 12px; color: var(--text3); margin-top: 1px; }
-  .version-badge { font-size: 11px; color: var(--text3); background: var(--surface2); border: 1px solid var(--border); border-radius: 5px; padding: 2px 8px; cursor: pointer; font-family: var(--mono); }
+
+ /* 미니멀한 날짜 표시 */
+.header-date { 
+  font-size: 13px; 
+  color: #55534f; 
+  font-weight: 500;
+  margin-left: 4px;        /* 제목/배지와 살짝 거리 두기 */
+  white-space: nowrap;
+}
+  
+/* 버전 배지 디자인 디테일 업 */
+.version-badge { 
+  font-size: 11px; 
+  color: #8c8a85; 
+  background: #f0eeea; 
+  border: 1px solid #dcdad4; 
+  border-radius: 6px; 
+  padding: 1px 6px; 
+  cursor: pointer; 
+  font-family: var(--mono);
+  line-height: 1.2;
+}
+.version-badge:hover { border-color: var(--border2); color: var(--text2); }
+ 
   .version-badge:hover { border-color: var(--border2); color: var(--text2); }
-  .user-info { margin-left: auto; display: flex; align-items: center; gap: 10px; }
-  .user-avatar { width: 30px; height: 30px; border-radius: 50%; overflow: hidden; border: 1px solid var(--border); }
-  .user-avatar img { width: 100%; height: 100%; object-fit: cover; }
-  .user-email { font-size: 12px; color: var(--text2); }
-  .logout-btn { padding: 5px 10px; border-radius: 6px; border: 1px solid var(--border); background: none; font-size: 12px; color: var(--text2); cursor: pointer; font-family: inherit; }
+  
+ /* 오른쪽 사용자 정보 및 버튼 그룹 */
+.user-info { 
+  display: flex; 
+  align-items: center; 
+  gap: 8px; 
+  margin-left: auto;
+}
+ 
+.user-avatar { width: 26px; height: 26px; border-radius: 50%; overflow: hidden; border: 1px solid var(--border); }
+.user-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.user-email { font-size: 12px; color: var(--text2); }
+
+ 
+  /* 로그아웃 버튼을 병동관리처럼 미니멀한 라운드 박스로 변경 */
+.logout-btn { 
+  padding: 4px 10px; 
+  border-radius: 8px; 
+  border: 1px solid #dddbd5; 
+  background: #fff; 
+  font-size: 12px; 
+  color: #6b6965; 
+  cursor: pointer; 
+  font-family: inherit; 
+}
+.logout-btn:hover { background: var(--surface2); }
+
+.header-actions { display: flex; gap: 6px; align-items: center; }
+ 
   .logout-btn:hover { background: var(--surface2); }
   .header-actions { display: flex; gap: 8px; align-items: center; }
   .main { max-width: 1200px; margin: 0 auto; padding: 20px 16px 60px; }
@@ -152,16 +224,21 @@
   .changelog-empty { text-align: center; color: var(--text3); font-size: 13px; padding: 20px 0; }
   .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--text); color: #fff; padding: 10px 18px; border-radius: 8px; font-size: 13px; opacity: 0; transition: all 0.25s; z-index: 300; white-space: nowrap; }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-  /* 미디어 쿼리 부분 수정 (CSS 맨 하단 근처) */
-@media (max-width: 600px) {
-  /* 기존 .form-grid 관련 내용은 그대로 두고, 아래 stat 관련만 압축 */
-  .stat-label {
-    font-size: 10px;       /* 초소형 화면(아이폰 미니 등) 대응 */
+
+ 
+/* 미디어 쿼리 - 초소형 화면(모바일) 대응 */
+@media (max-width: 680px) {
+  header {
+    padding: 10px 12px;
   }
-  .stat-num {
-    font-size: 18px;       /* 숫자 크기도 조금 더 압축 */
+  .user-email { 
+    display: none; /* 모바일에서 이메일 주소는 숨겨서 공간 확보 */
+  }
+  header h1 {
+    font-size: 15px; /* 모바일에서는 제목 크기 살짝 조정 */
   }
 }
+ 
 </style>
 </head>
 <body>
@@ -185,21 +262,23 @@
 
 <div id="app-screen">
   <header>
-    <div>
-      <h1>타과 의뢰 환자 명단</h1>
-      <button class="version-badge" id="version-badge" id="version-btn">v3.1</button>
-      <div class="sub" id="header-sub">로딩 중...</div>
+  <div class="header-left">
+    <span class="hospital-emoji">🏥</span>
+    <h1>타과 의뢰 환자 명단</h1>
+    <button class="version-badge" id="version-badge">v5.0</button>
+    <div class="header-date" id="header-sub">로딩 중...</div>
+  </div>
+  
+  <div class="user-info">
+    <div class="user-avatar"><img id="user-photo" src="" alt=""></div>
+    <span class="user-email" id="user-email"></span>
+    <button class="logout-btn" id="logout-btn">로그아웃</button>
+    <div class="header-actions">
+      <button class="btn" id="csv-btn">📥 CSV</button>
+      <button class="btn primary" id="add-btn">+ 새 환자</button>
     </div>
-    <div class="user-info">
-      <div class="user-avatar"><img id="user-photo" src="" alt=""></div>
-      <span class="user-email" id="user-email"></span>
-      <button class="logout-btn" id="logout-btn">로그아웃</button>
-      <div class="header-actions">
-        <button class="btn" id="csv-btn">📥 CSV</button>
-        <button class="btn primary" id="add-btn">+ 새 환자</button>
-      </div>
-    </div>
-  </header>
+  </div>
+</header>
   <div class="main">
     <div class="stats" id="stats"></div>
     <div class="toolbar">
