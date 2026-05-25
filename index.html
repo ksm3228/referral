@@ -151,7 +151,7 @@
   <header>
     <div>
       <h1>타과 의뢰 환자 명단</h1>
-     <button class="version-badge" id="version-badge" onclick="openVersionModal()">v1.0</button>
+     <button class="version-badge" id="version-badge" onclick="openVersionModal()">v2.0</button>
       <div class="sub" id="header-sub">로딩 중...</div>
     </div>
     <div class="user-info">
@@ -404,6 +404,7 @@ async function initData() {
 function listenData() {
   onValue(ref(db, 'referral'), (snap) => {
     allData = [];
+    window.allData = allData;
     if (snap.exists()) {
       snap.forEach(child => allData.push({ _key: child.key, ...child.val() }));
       allData.sort((a, b) => a.date > b.date ? 1 : -1);
