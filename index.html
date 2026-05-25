@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>타과 의뢰 환자 명단</title>
+<style>
+  :root {
+    --bg: #f5f5f7;
+    --surface: #ffffff;
+    --surface2: #f0f0f5;
+    --border: #e0e0e8;
+    --border2: #c8c8d8;
+    --text: #1a1a2e;
+    --text2: #555577;
+    --text3: #999aaa;
+    --accent: #1a6b3c;
+    --accent-bg: #e8f5ee;
+    --warn: #92600a;
+    --warn-bg: #fef3dc;
+    --danger: #9b1c1c;
+    --danger-bg: #fde8e8;
+    --yellow-hl: #fffbcc;
+    --yellow-text: #7a6400;
+    --mono: 'Courier New', monospace;
+    --app-bar-height: 110px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', -apple-system, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; min-height: 100dvh; overscroll-behavior: none; }
+
+  /* ── 앱바 (완전 고정) ── */
+  .app-bar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 50;
+    background: var(--surface);
+    border-bottom: 0.5px solid var(--border);
+  }
+  .app-bar-inner {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 16px; gap: 10px;
+  }
+  .header-left { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  .app-title { font-size: 16px; font-weight: 700; white-space: nowrap; }
+  .version-badge {
+    font-size: 11px; color: var(--text3); background: var(--surface2);
+    border: 1px solid var(--border); border-radius: 5px;
+    padding: 2px 7px; cursor: pointer; font-family: var(--mono);
+  }
+  .version-badge:hover { border-color: var(--border2); color: var(--text2); }
+  .header-date { font-size: 12px; color: var(--text2); white-space: nowrap; }
+  .user-info { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+  .user-avatar { width: 26px; height: 26px; border-radius: 50%; overflow: hidden; border: 1px solid var(--border); flex-shrink: 0; }
+  .user-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .user-email { font-size: 12px; color: var(--text2); }
+  .btn-logout {
+    padding: 4px 10px; border-radius: 8px;
+    border: 0.5px solid var(--border2); background: var(--surface);
+    font-size: 12px; color: var(--text2); cursor: pointer; font-family: inherit;
+  }
+  .btn-logout:hover { background: var(--surface2); }
+  .header-actions { display: flex; gap: 6px; align-items: center; }
+  .btn { padding: 7px 13px; border-radius: 8px; border: 0.5px solid var(--border2); background: var(--surface); color: var(--text); font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; font-family: inherit; }
+  .btn:hover { background: var(--surface2); }
+  .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn.primary:hover { background: #155c33; }
+
+  /* ── 통계 바 (고정) ── */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px; padding: 10px 12px;
+    background: var(--bg);
+    border-bottom: 0.5px solid var(--border);
+  }
+  .stat-card {
+    background: var(--surface); border: 0.5px solid var(--border);
+    border-radius: 10px; padding: 8px 6px; text-align: center;
+  }
+  .stat-num { font-size: 20px; font-weight: 600; line-height: 1.2; }
+  .stat-lbl { font-size: 10px; color: var(--text3); font-weight: 500; text-transform: uppercase; letter-spacing: -0.02em; margin-top: 2px; white-space: nowrap; }
+  .stat-num.total { color: var(--text); }
+  .stat-num.still { color: var(--warn); }
+  .stat-num.not-yet { color: var(--danger); }
+  .stat-num.done { color: var(--accent); }
+
+  /* ── 검색/필터 바 (고정) ── */
+  .toolbar {
+    display: flex; gap: 8px; padding: 8px 12px;
+    background: var(--bg);
+    border-bottom: 0.5px solid var(--border);
+    align-items: center;
+  }
+  .search-wrap { position: relative; flex: 1; }
+  .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text3); font-size: 14px; pointer-events: none; }
+  .toolbar input[type=text] {
+    width: 100%; padding: 8px 12px 8px 32px;
+    border: 0.5px solid var(--border2); border-radius: 8px;
+    font-size: 13px; background: var(--surface); color: var(--text); outline: none; font-family: inherit;
+  }
+  .toolbar input[type=text]:focus { border-color: var(--accent); }
+  .toolbar select {
+    padding: 8px 10px; border: 0.5px solid var(--border2); border-radius: 8px;
+    font-size: 13px; background: var(--surface); color: var(--text); outline: none; cursor: pointer; font-family: inherit;
+  }
+
+  /* ── 스크롤 콘텐츠 영역 ── */
+  .scroll-content {
+    position: fixed;
+    top: var(--app-bar-height);
+    left: 0; right: 0; bottom: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* ── 테이블 ── */
+  .tbl-container {
+    background: var(--surface);
+    border-top: 0.5px solid var(--border);
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 700px; }
+  thead th {
+    background: var(--surface2); color: var(--text2); font-weight: 600;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em;
+    padding: 9px 12px; text-align: left;
+    border-bottom: 0.5px solid var(--border);
+    white-space: nowrap;
+    position: sticky; top: 0; z-index: 10;
+  }
+  tbody tr { border-bottom: 0.5px solid var(--border); transition: background 0.1s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: #fafaf8; }
+  tbody td { padding: 9px 12px; vertical-align: top; color: var(--text); }
+  .date-cell { white-space: nowrap; color: var(--text2); font-size: 12px; }
+  .reg-cell { font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+  .reg-active { color: var(--yellow-text); background: var(--yellow-hl); padding: 2px 6px; border-radius: 5px; font-weight: 700; }
+  .result-cell { white-space: pre-wrap; line-height: 1.5; max-width: 260px; font-size: 12.5px; }
+  .issue-cell { max-width: 130px; white-space: pre-wrap; font-size: 12.5px; }
+  .badge { display: inline-flex; align-items: center; font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 20px; white-space: nowrap; }
+  .badge-still { background: var(--warn-bg); color: var(--warn); }
+  .badge-end { background: var(--accent-bg); color: var(--accent); }
+  .badge-not { background: var(--danger-bg); color: var(--danger); }
+  .note-cell { font-size: 12px; color: var(--text3); }
+  .action-btns { display: flex; gap: 4px; margin-top: 4px; }
+  .act-btn { padding: 2px 7px; border-radius: 5px; border: 0.5px solid var(--border); background: none; cursor: pointer; font-size: 11px; color: var(--text2); font-family: inherit; transition: all 0.1s; }
+  .act-btn:hover { background: var(--surface2); }
+  .act-btn.del:hover { background: var(--danger-bg); color: var(--danger); border-color: #f5c1c1; }
+  .act-btn.edit:hover { background: var(--accent-bg); color: var(--accent); border-color: #a7d9bc; }
+  .empty { text-align: center; padding: 48px 20px; color: var(--text3); font-size: 14px; }
+
+  /* ── 모달 ── */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200; align-items: flex-end; justify-content: center; padding: 0; }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface); border-radius: 20px 20px 0 0;
+    width: 100%; max-width: 560px; max-height: 92dvh;
+    overflow-y: auto; padding-bottom: 24px;
+    animation: slideUp .22s cubic-bezier(.32,.72,0,1);
+  }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .sheet-handle { width: 36px; height: 4px; background: var(--border2); border-radius: 2px; margin: 12px auto 0; }
+  .modal h3 { font-size: 16px; font-weight: 600; padding: 12px 18px; border-bottom: 0.5px solid var(--border); }
+  .modal-body { padding: 16px 18px 0; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .form-grid .full { grid-column: 1 / -1; }
+  .form-row label { display: block; font-size: 11px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+  .form-row input, .form-row textarea, .form-row select {
+    width: 100%; padding: 10px 12px;
+    border: 0.5px solid var(--border2); border-radius: 8px;
+    font-size: 14px; background: var(--surface2); color: var(--text); font-family: inherit; outline: none;
+    -webkit-appearance: none;
+  }
+  .form-row input:focus, .form-row textarea:focus, .form-row select:focus { border-color: var(--accent); background: var(--surface); }
+  .form-row textarea { resize: vertical; min-height: 72px; }
+  .modal-footer { display: flex; gap: 8px; padding: 14px 18px 0; border-top: 0.5px solid var(--border); margin-top: 16px; }
+  .btn-cancel-sheet { flex: 1; padding: 12px; border-radius: 8px; border: 0.5px solid var(--border2); background: var(--surface2); color: var(--text); font-size: 15px; font-weight: 500; cursor: pointer; font-family: inherit; }
+  .btn-save-sheet { flex: 2; padding: 12px; border-radius: 8px; border: none; background: var(--accent); color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; }
+
+  /* ── 버전 모달 (중앙) ── */
+  .modal-center { align-items: center; padding: 16px; }
+  .modal-center .modal { border-radius: 16px; max-width: 460px; }
+  .changelog-list { max-height: 240px; overflow-y: auto; margin-bottom: 14px; }
+  .changelog-item { display: flex; gap: 10px; padding: 8px 0; border-bottom: 0.5px solid var(--border); font-size: 13px; align-items: flex-start; }
+  .changelog-item:last-child { border-bottom: none; }
+  .changelog-ver { font-family: var(--mono); font-size: 11px; background: var(--surface2); border: 0.5px solid var(--border); border-radius: 4px; padding: 1px 6px; white-space: nowrap; color: var(--text2); min-width: 48px; text-align: center; }
+  .changelog-date { font-size: 11px; color: var(--text3); white-space: nowrap; }
+  .changelog-note { flex: 1; color: var(--text); }
+  .changelog-empty { text-align: center; color: var(--text3); font-size: 13px; padding: 20px 0; }
+
+  /* ── 로그인 ── */
+  #login-screen { position: fixed; inset: 0; background: var(--bg); z-index: 300; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; }
+  .login-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: 16px; padding: 40px 36px; text-align: center; width: 100%; max-width: 340px; box-shadow: 0 4px 24px rgba(0,0,0,0.07); }
+  .login-card h1 { font-size: 20px; font-weight: 600; margin-bottom: 6px; }
+  .login-card p { font-size: 13px; color: var(--text2); margin-bottom: 28px; }
+  .google-btn { display: inline-flex; align-items: center; gap: 10px; padding: 12px 20px; border-radius: 10px; border: 0.5px solid var(--border2); background: var(--surface); font-size: 14px; font-weight: 500; color: var(--text); cursor: pointer; width: 100%; justify-content: center; font-family: inherit; }
+  .google-btn svg { width: 18px; height: 18px; flex-shrink: 0; }
+  .login-error { margin-top: 14px; font-size: 12px; color: var(--danger); display: none; }
+
+  /* ── 토스트 ── */
+  .toast { position: fixed; bottom: calc(24px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%) translateY(20px); background: var(--text); color: #fff; padding: 10px 20px; border-radius: 24px; font-size: 13px; opacity: 0; transition: all 0.25s; z-index: 400; white-space: nowrap; pointer-events: none; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  @media (max-width: 600px) {
+    .user-email { display: none; }
+    .app-title { font-size: 15px; }
+    .stats-row { gap: 4px; padding: 8px 10px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- 로그인 -->
+<div id="login-screen">
+  <div class="login-card">
+    <h1>🏥 타과 의뢰 환자 명단</h1>
+    <p>접근 권한이 있는 계정으로 로그인하세요</p>
+    <button class="google-btn" id="google-login-btn">
+      <svg viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+      Google 계정으로 로그인
+    </button>
+    <div class="login-error" id="login-error">접근 권한이 없는 계정입니다.</div>
+  </div>
+</div>
+
+<!-- 앱 -->
+<div id="app-screen" style="display:none">
+
+  <!-- 고정 앱바 -->
+  <div class="app-bar" id="appBar">
+    <div class="app-bar-inner">
+      <div class="header-left">
+        <span style="font-size:20px">🏥</span>
+        <span class="app-title">타과 의뢰 환자 명단</span>
+        <button class="version-badge" id="version-badge">v1.0</button>
+        <span class="header-date" id="header-date"></span>
+      </div>
+      <div class="user-info">
+        <div class="user-avatar"><img id="user-photo" src="" alt=""></div>
+        <span class="user-email" id="user-email"></span>
+        <button class="btn-logout" id="logout-btn">로그아웃</button>
+        <div class="header-actions">
+          <button class="btn" id="csv-btn">📥 CSV</button>
+          <button class="btn primary" id="add-btn">+ 새 환자</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 통계 -->
+    <div class="stats-row" id="stats">
+      <div class="stat-card"><div class="stat-num total" id="s-total">0</div><div class="stat-lbl">전체</div></div>
+      <div class="stat-card"><div class="stat-num still" id="s-still">0</div><div class="stat-lbl">추적 중</div></div>
+      <div class="stat-card"><div class="stat-num not-yet" id="s-notyet">0</div><div class="stat-lbl">미확인</div></div>
+      <div class="stat-card"><div class="stat-num done" id="s-done">0</div><div class="stat-lbl">종료</div></div>
+    </div>
+
+    <!-- 검색/필터 -->
+    <div class="toolbar">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="search" placeholder="환자명, 병록번호, 건진이상, 결과 검색...">
+      </div>
+      <select id="filter-status">
+        <option value="">전체 상태</option>
+        <option value="still f/u">still f/u</option>
+        <option value="end">end</option>
+        <option value="not yet">not yet</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- 스크롤 영역 -->
+  <div class="scroll-content" id="scrollContent">
+    <div class="tbl-container">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:88px">의뢰일</th>
+            <th style="width:86px">병록번호</th>
+            <th style="width:60px">성명</th>
+            <th style="width:130px">건진이상</th>
+            <th>결과</th>
+            <th style="width:80px">추적여부</th>
+            <th style="width:96px">비고</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- 환자 추가/수정 모달 -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="sheet-handle"></div>
+    <h3 id="modal-title">새 환자 추가</h3>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-row"><label>의뢰일</label><input type="date" id="f-date"></div>
+        <div class="form-row"><label>병록번호</label><input type="text" id="f-reg" placeholder="00000000" inputmode="numeric"></div>
+        <div class="form-row"><label>성명</label><input type="text" id="f-name"></div>
+        <div class="form-row"><label>추적여부</label>
+          <select id="f-status">
+            <option value="not yet">not yet</option>
+            <option value="still f/u">still f/u</option>
+            <option value="end">end</option>
+          </select>
+        </div>
+        <div class="form-row full"><label>건진이상</label><input type="text" id="f-issue"></div>
+        <div class="form-row full"><label>결과</label><textarea id="f-result"></textarea></div>
+        <div class="form-row full"><label>비고</label><input type="text" id="f-note"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel-sheet" id="modal-cancel">취소</button>
+      <button class="btn-save-sheet" id="modal-save">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 버전 모달 -->
+<div class="modal-overlay modal-center" id="version-modal">
+  <div class="modal" style="border-radius:16px;padding-bottom:0">
+    <h3>버전 관리</h3>
+    <div class="modal-body">
+      <div style="display:flex;gap:8px;margin-bottom:14px;align-items:flex-end">
+        <div class="form-row" style="flex:0 0 76px"><label>버전</label><input type="text" id="v-ver" placeholder="v1.1"></div>
+        <div class="form-row" style="flex:1"><label>변경 내용</label><input type="text" id="v-note" placeholder="예: 이정길 환자 결과 추가"></div>
+        <button class="btn primary" id="v-add-btn" style="flex-shrink:0;margin-bottom:0">추가</button>
+      </div>
+      <div class="changelog-list" id="changelog-list"></div>
+    </div>
+    <div class="modal-footer" style="margin-bottom:16px">
+      <button class="btn-cancel-sheet" id="version-close">닫기</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut as fbSignOut, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getDatabase, ref, set, get, onValue, remove, push }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const ALLOWED_EMAIL = "kimsungmin83@gmail.com";
+const firebaseConfig = {
+  apiKey: "AIzaSyC9k6iGUcNObjxQGtlVOuP5_YSpErT9DtA",
+  authDomain: "ward-app-257c4.firebaseapp.com",
+  databaseURL: "https://ward-app-257c4-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "ward-app-257c4",
+  storageBucket: "ward-app-257c4.firebasestorage.app",
+  messagingSenderId: "261869081149",
+  appId: "1:261869081149:web:d58f53870517e295861054"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
+const provider = new GoogleAuthProvider();
+
+const DEFAULT_DATA = [
+  {date:'2025-11-11',reg:'01751470',name:'전준호',issue:'Palpitation',result:'r/o Atrial Flutter\n-> Cordarone, NOAC, PPI',status:'still f/u',note:'내 외래도 f/u중'},
+  {date:'2025-12-03',reg:'03714542',name:'박향순',issue:'빈혈, Protein증가',result:'Protein, total 증가\n-> MM 의심\n-> 성서혈종의뢰',status:'end',note:''},
+  {date:'2025-12-15',reg:'01829843',name:'정창용',issue:'빈혈',result:'Pyridoxine(B6), 엽산\n-> 2개월 약 복용 후 d/c',status:'end',note:''},
+  {date:'2026-01-14',reg:'03719884',name:'박춘화',issue:'심비대',result:'TMT, ABP, Echo, holter\n-> Cardiac CT(coronary a. CT)\n-> r/o Myocardial bridge with mild luminal narrowing in mLAD ; No med.',status:'end',note:''},
+  {date:'2026-01-28',reg:'01655933',name:'최외남',issue:'HCV(+)',result:'HCV RNA 정량검사\n-> 음성으로 추적 종료',status:'end',note:''},
+  {date:'2026-02-04',reg:'02429728',name:'권기환',issue:'흡연자, Hb증가',result:'금연 및 Hb f/u',status:'still f/u',note:''},
+  {date:'2026-02-04',reg:'02429728',name:'권기환',issue:'심비대',result:'ABPM, TTE\n-> Statin, HTN med 시작',status:'still f/u',note:''},
+  {date:'2026-02-04',reg:'02429728',name:'권기환',issue:'hyper K',result:'Florinef (에디슨병 치료제인 스테로이드제제) 처방',status:'still f/u',note:''},
+  {date:'2026-02-09',reg:'02331185',name:'최종순',issue:'G.varix, 간수치증가',result:'r/o LC 로 abd. CT, lab f/u\n-> gastric SET 소견',status:'end',note:''},
+  {date:'2026-03-25',reg:'02925331',name:'이상원',issue:'건진 폐암 의심',result:'r/o lung ca.로 절대 금연하며 3개월뒤 ct f/u',status:'still f/u',note:''},
+  {date:'2026-04-03',reg:'01835895',name:'이혜영',issue:'심한 심장 석회화',result:'심장초음파(TTE), CCTA\n-> pitava2mg/에제티미브 복약중이었는데\nLDL <70 타겟으로 pitava 2mg 더 추가',status:'still f/u',note:''},
+  {date:'2026-04-03',reg:'01662703',name:'나규식',issue:'TG 증가',result:'apo B 포함검사',status:'not yet',note:''},
+  {date:'2026-04-08',reg:'01891234',name:'신지혜',issue:'총장님 며느리\nLDL 160, 폐경 및 골다공증',result:'성서 정형외과 다니고 있어서 골다공증 진료 및 갱년기 증상 부인과 의뢰\n-> Angeliq 3개월 테스트',status:'still f/u',note:''},
+  {date:'2026-04-24',reg:'03338645',name:'이인상',issue:'TG 800',result:'1개월 뒤 lab f/u, 1개월 뒤 fenofibrate',status:'still f/u',note:''},
+  {date:'2026-04-27',reg:'02473007',name:'최정현',issue:'간헐관종,\nProtein 증가, 알부민 증가',result:'성서 소화기 원함',status:'not yet',note:''},
+  {date:'2026-04-27',reg:'03116399',name:'노복우',issue:'심장석회화 경도\nbut DOE',result:'심초음파, CCTA w/u',status:'still f/u',note:''},
+  {date:'2026-04-29',reg:'02322765',name:'손곡수',issue:'콜레스테롤 좋으나\nb-MRA 상 심한 협착',result:'statin low dose, 27년4월 CTA (carotid 까지) w/u',status:'still f/u',note:''},
+  {date:'2026-05-06',reg:'03733845',name:'김경환',issue:'Cr 증가',result:'ADPKD로 성서 신장내과로 의뢰',status:'still f/u',note:''},
+  {date:'2026-05-08',reg:'03277754',name:'연동녕',issue:'pancytopenia',result:'early HCC 의심',status:'still f/u',note:''},
+  {date:'2026-05-15',reg:'03741586',name:'안길영',issue:'proteinuria',result:'2개월 뒤 U/A f/u',status:'still f/u',note:''},
+  {date:'2026-05-20',reg:'03235453',name:'김상호',issue:'숨참(과거 결핵)',result:'ILD 산정특례 받고, 항섬유화 제제 복용 시작',status:'still f/u',note:''},
+  {date:'2026-05-22',reg:'02878572',name:'이정길',issue:'CPK 증가',result:'',status:'not yet',note:''},
+];
+
+let allData = [], editingKey = null;
+
+function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function badge(s) {
+  if (s==='still f/u') return `<span class="badge badge-still">still f/u</span>`;
+  if (s==='end') return `<span class="badge badge-end">end</span>`;
+  return `<span class="badge badge-not">not yet</span>`;
+}
+function showToast(msg, err) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.style.background = err ? 'var(--danger)' : 'var(--text)';
+  el.classList.add('show'); setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+// 앱바 높이 동적 계산
+function updateAppBarHeight() {
+  const bar = document.getElementById('appBar');
+  if (bar) {
+    const h = bar.offsetHeight;
+    document.documentElement.style.setProperty('--app-bar-height', h + 'px');
+    document.getElementById('scrollContent').style.top = h + 'px';
+  }
+}
+
+function render() {
+  const q = document.getElementById('search').value.toLowerCase();
+  const sf = document.getElementById('filter-status').value;
+  const rows = allData.filter(r => {
+    const m = !q || [r.name,r.reg,r.issue,r.result,r.note].join(' ').toLowerCase().includes(q);
+    return m && (!sf || r.status === sf);
+  });
+  document.getElementById('s-total').textContent = allData.length;
+  document.getElementById('s-still').textContent = allData.filter(r=>r.status==='still f/u').length;
+  document.getElementById('s-notyet').textContent = allData.filter(r=>r.status==='not yet').length;
+  document.getElementById('s-done').textContent = allData.filter(r=>r.status==='end').length;
+  document.getElementById('header-date').textContent = `총 ${allData.length}명 · ${new Date().toLocaleDateString('ko-KR')}`;
+
+  const tbody = document.getElementById('tbody');
+  if (!rows.length) { tbody.innerHTML = `<tr><td colspan="7" class="empty">검색 결과가 없습니다.</td></tr>`; return; }
+  tbody.innerHTML = rows.map(r => {
+    const isActive = r.status === 'still f/u';
+    const regHtml = isActive ? `<span class="reg-active">${esc(r.reg)}</span>` : `<span style="color:var(--text2)">${esc(r.reg)}</span>`;
+    return `<tr>
+      <td class="date-cell">${esc(r.date)}</td>
+      <td class="reg-cell">${regHtml}</td>
+      <td><strong>${esc(r.name)}</strong></td>
+      <td class="issue-cell">${esc(r.issue)}</td>
+      <td class="result-cell">${esc(r.result)}</td>
+      <td>${badge(r.status)}</td>
+      <td><div class="note-cell">${esc(r.note)}</div>
+        <div class="action-btns">
+          <button class="act-btn edit" data-key="${r._key}">수정</button>
+          <button class="act-btn del" data-key="${r._key}">삭제</button>
+        </div></td>
+    </tr>`;
+  }).join('');
+  tbody.querySelectorAll('.act-btn.edit').forEach(btn => btn.addEventListener('click', () => openEditModal(btn.dataset.key)));
+  tbody.querySelectorAll('.act-btn.del').forEach(btn => btn.addEventListener('click', () => deleteRow(btn.dataset.key)));
+}
+
+function openAddModal() {
+  editingKey = null;
+  document.getElementById('modal-title').textContent = '새 환자 추가';
+  document.getElementById('f-date').value = new Date().toISOString().slice(0,10);
+  ['f-reg','f-name','f-issue','f-result','f-note'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-status').value = 'not yet';
+  document.getElementById('modal-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('f-name').focus(), 100);
+}
+function openEditModal(key) {
+  const r = allData.find(x => x._key === key); if (!r) return;
+  editingKey = key;
+  document.getElementById('modal-title').textContent = '환자 정보 수정';
+  document.getElementById('f-date').value = r.date;
+  document.getElementById('f-reg').value = r.reg;
+  document.getElementById('f-name').value = r.name;
+  document.getElementById('f-issue').value = r.issue;
+  document.getElementById('f-result').value = r.result;
+  document.getElementById('f-status').value = r.status;
+  document.getElementById('f-note').value = r.note || '';
+  document.getElementById('modal-overlay').classList.add('open');
+}
+async function saveRow() {
+  const d = {
+    date: document.getElementById('f-date').value,
+    reg: document.getElementById('f-reg').value.trim(),
+    name: document.getElementById('f-name').value.trim(),
+    issue: document.getElementById('f-issue').value.trim(),
+    result: document.getElementById('f-result').value.trim(),
+    status: document.getElementById('f-status').value,
+    note: document.getElementById('f-note').value.trim(),
+  };
+  if (!d.name || !d.date) { showToast('날짜와 성명은 필수입니다.', true); return; }
+  try {
+    if (editingKey) { await set(ref(db, `referral/${editingKey}`), d); showToast('수정되었습니다.'); }
+    else { await push(ref(db, 'referral'), d); showToast('추가되었습니다.'); }
+    document.getElementById('modal-overlay').classList.remove('open');
+  } catch(e) { showToast('저장 중 오류가 발생했습니다.', true); }
+}
+async function deleteRow(key) {
+  const r = allData.find(x => x._key === key);
+  if (!r || !confirm(`${r.name} 환자를 삭제하시겠습니까?`)) return;
+  try { await remove(ref(db, `referral/${key}`)); showToast('삭제되었습니다.'); }
+  catch(e) { showToast('삭제 중 오류가 발생했습니다.', true); }
+}
+function exportCSV() {
+  const header = ['의뢰일','병록번호','성명','건진이상','결과','추적여부','비고'];
+  const rows = allData.map(r => [r.date,r.reg,r.name,r.issue,r.result,r.status,r.note].map(v=>`"${(v||'').replace(/"/g,'""')}"`).join(','));
+  const csv = '\uFEFF' + [header.join(','), ...rows].join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8'}));
+  a.download = `타과의뢰_${new Date().toISOString().slice(0,10)}.csv`; a.click();
+}
+
+// Version
+async function loadVersions() {
+  const snap = await get(ref(db, 'changelog'));
+  const versions = [];
+  if (snap.exists()) { snap.forEach(child => versions.push({ _key: child.key, ...child.val() })); versions.sort((a,b) => b.ts - a.ts); }
+  return versions;
+}
+async function initVersionBadge() {
+  const versions = await loadVersions();
+  if (versions[0]) document.getElementById('version-badge').textContent = versions[0].ver;
+}
+async function openVersionModal() {
+  document.getElementById('version-modal').classList.add('open');
+  const versions = await loadVersions();
+  renderChangelog(versions);
+  if (versions[0]) {
+    const parts = versions[0].ver.replace('v','').split('.');
+    parts[parts.length-1] = String(Number(parts[parts.length-1]||0)+1);
+    document.getElementById('v-ver').value = 'v' + parts.join('.');
+  } else { document.getElementById('v-ver').value = 'v1.0'; }
+}
+function renderChangelog(versions) {
+  const el = document.getElementById('changelog-list');
+  if (!versions.length) { el.innerHTML = `<div class="changelog-empty">변경 이력이 없습니다.</div>`; return; }
+  el.innerHTML = versions.map(v => `
+    <div class="changelog-item">
+      <span class="changelog-ver">${esc(v.ver)}</span>
+      <span class="changelog-date">${new Date(v.ts).toLocaleDateString('ko-KR')}</span>
+      <span class="changelog-note">${esc(v.note)}</span>
+      <button class="act-btn del" data-vkey="${v._key}">삭제</button>
+    </div>`).join('');
+  if (versions[0]) document.getElementById('version-badge').textContent = versions[0].ver;
+  el.querySelectorAll('.act-btn.del').forEach(btn => btn.addEventListener('click', async () => {
+    if (!confirm('이 버전 기록을 삭제하시겠습니까?')) return;
+    await remove(ref(db, `changelog/${btn.dataset.vkey}`));
+    renderChangelog(await loadVersions()); showToast('삭제되었습니다.');
+  }));
+}
+async function addVersion() {
+  const ver = document.getElementById('v-ver').value.trim(), note = document.getElementById('v-note').value.trim();
+  if (!ver || !note) { showToast('버전과 내용을 입력해주세요.', true); return; }
+  await push(ref(db, 'changelog'), { ver, note, ts: Date.now() });
+  document.getElementById('v-note').value = '';
+  renderChangelog(await loadVersions()); showToast('버전이 기록되었습니다.');
+}
+
+// Auth
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    if (user.email !== ALLOWED_EMAIL) {
+      await fbSignOut(auth);
+      document.getElementById('login-error').style.display = 'block';
+      document.getElementById('login-error').textContent = `접근 권한이 없는 계정입니다. (${user.email})`;
+      return;
+    }
+    document.getElementById('user-email').textContent = user.email;
+    document.getElementById('user-photo').src = user.photoURL || '';
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app-screen').style.display = 'block';
+
+    setTimeout(updateAppBarHeight, 50);
+
+    const snap = await get(ref(db, 'referral'));
+    if (!snap.exists()) {
+      for (const row of DEFAULT_DATA) await push(ref(db, 'referral'), row);
+      await new Promise(r => setTimeout(r, 500));
+    }
+    onValue(ref(db, 'referral'), (snap) => {
+      allData = [];
+      if (snap.exists()) { snap.forEach(child => allData.push({ _key: child.key, ...child.val() })); allData.sort((a,b) => b.date > a.date ? 1 : -1); }
+      render();
+    });
+    initVersionBadge();
+  } else {
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('app-screen').style.display = 'none';
+  }
+});
+
+// 이벤트
+document.getElementById('google-login-btn').addEventListener('click', async () => {
+  try { document.getElementById('login-error').style.display = 'none'; await signInWithPopup(auth, provider); }
+  catch(e) { document.getElementById('login-error').style.display = 'block'; document.getElementById('login-error').textContent = '로그인 중 오류가 발생했습니다.'; }
+});
+document.getElementById('logout-btn').addEventListener('click', () => fbSignOut(auth));
+document.getElementById('add-btn').addEventListener('click', openAddModal);
+document.getElementById('csv-btn').addEventListener('click', exportCSV);
+document.getElementById('version-badge').addEventListener('click', openVersionModal);
+document.getElementById('modal-cancel').addEventListener('click', () => document.getElementById('modal-overlay').classList.remove('open'));
+document.getElementById('modal-save').addEventListener('click', saveRow);
+document.getElementById('version-close').addEventListener('click', () => document.getElementById('version-modal').classList.remove('open'));
+document.getElementById('v-add-btn').addEventListener('click', addVersion);
+document.getElementById('search').addEventListener('input', render);
+document.getElementById('filter-status').addEventListener('change', render);
+document.getElementById('modal-overlay').addEventListener('click', e => { if(e.target===e.currentTarget) document.getElementById('modal-overlay').classList.remove('open'); });
+document.getElementById('version-modal').addEventListener('click', e => { if(e.target===e.currentTarget) document.getElementById('version-modal').classList.remove('open'); });
+document.addEventListener('keydown', e => { if(e.key==='Escape') { document.getElementById('modal-overlay').classList.remove('open'); document.getElementById('version-modal').classList.remove('open'); }});
+window.addEventListener('resize', updateAppBarHeight);
+</script>
+</body>
+</html>
