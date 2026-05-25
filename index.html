@@ -489,12 +489,14 @@ onAuthStateChanged(auth, async (user) => {
 
     // Firebase에 데이터 없으면 기본 데이터 입력
     const snap = await get(ref(db, 'referral'));
-    if (!snap.exists()) {
-      for (const row of DEFAULT_DATA) await push(ref(db, 'referral'), row);
-    }
+if (!snap.exists()) {
+  for (const row of DEFAULT_DATA) await push(ref(db, 'referral'), row);
+  // 22개 다 넣은 후 잠깐 대기
+  await new Promise(r => setTimeout(r, 1000));
+}
 
-    // 실시간 데이터 리스너
-    onValue(ref(db, 'referral'), (snap) => {
+// 실시간 데이터 리스너
+onValue(ref(db, 'referral'), (snap) => {
       allData = [];
       if (snap.exists()) {
         snap.forEach(child => allData.push({ _key: child.key, ...child.val() }));
