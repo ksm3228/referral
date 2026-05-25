@@ -156,7 +156,7 @@
   <header>
     <div>
       <h1>타과 의뢰 환자 명단</h1>
-      <button class="version-badge" id="version-badge" id="version-btn">v1.0</button>
+      <button class="version-badge" id="version-badge" id="version-btn">v2.1</button>
       <div class="sub" id="header-sub">로딩 중...</div>
     </div>
     <div class="user-info">
@@ -465,7 +465,7 @@ async function openVersionModal() {
     parts[parts.length-1] = String(Number(parts[parts.length-1]||0) + 1);
     document.getElementById('v-ver').value = 'v' + parts.join('.');
   } else {
-    document.getElementById('v-ver').value = 'v2.0';
+    document.getElementById('v-ver').value = 'v1.0';
   }
 }
 
