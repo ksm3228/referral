@@ -113,7 +113,7 @@ table { width: 100%; border-collapse: collapse; font-size: 13px; }
   .badge-end { background: var(--accent-bg); color: var(--accent); }
   .badge-not { background: var(--danger-bg); color: var(--danger); }
   .note-cell { font-size: 12px; color: var(--text3); }
-  .action-btns { display: flex; gap: 4px; margin-top: 4px; }
+  .action-btns { display: flex; gap: 8px; margin-top: 6px; }
   .act-btn { padding: 2px 6px; border-radius: 5px; border: 1px solid var(--border); background: none; cursor: pointer; font-size: 11px; color: var(--text2); font-family: inherit; transition: all 0.1s; }
   .act-btn:hover { background: var(--surface2); }
   .act-btn.del:hover { background: var(--danger-bg); color: var(--danger); border-color: #f5c1c1; }
@@ -177,7 +177,7 @@ table { width: 100%; border-collapse: collapse; font-size: 13px; }
     <div class="header-left">
       <span class="hospital-emoji">🏥</span>
       <h1>타과 의뢰 환자 명단</h1>
-      <button class="version-badge" id="version-badge">버전7.3</button>
+      <button class="version-badge" id="version-badge">버전7.4</button>
       <div class="header-date" id="header-sub"></div>
     </div>
     <div class="user-info">
@@ -362,7 +362,7 @@ const regHtml = isActive ? `<span class="reg-active">${esc(r.reg)}</span>` : isN
     return `<tr>
       <td class="date-cell">${esc(r.date)}</td>
       <td class="reg-cell">${regHtml}</td>
-      <td><strong>${esc(r.name)}</strong></td>
+      <td style="white-space:nowrap"><strong>${esc(r.name)}</strong></td>
       <td class="issue-cell">${esc(r.issue)}</td>
       <td class="result-cell">${esc(r.result)}</td>
       <td>${badge(r.status)}</td>
