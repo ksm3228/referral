@@ -119,8 +119,10 @@ header h1 {
  
   .logout-btn:hover { background: var(--surface2); }
   .header-actions { display: flex; gap: 8px; align-items: center; }
-  .main { max-width: 1200px; margin: 0 auto; padding: 20px 16px 60px; }
-  .stats { 
+
+ .main { max-width: 1200px; margin: 0 auto; padding: 20px 16px 0; }
+
+ .stats { 
   display: flex;          /* 기존 grid 대신 flex로 변경하여 한 줄 정렬 강제 */
   gap: 6px;               /* 카드 사이 간격을 10px에서 6px로 좁힘 */
   margin-bottom: 18px; 
@@ -163,13 +165,16 @@ header h1 {
   .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
   .btn.primary:hover { background: #155c33; }
   .tbl-container { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
-  .tbl-scroll { 
-  overflow-x: auto; 
-  position: relative; /* sticky th의 기준점이 됩니다 */
-  max-height: calc(100vh - 250px); /* 화면 크기에 맞춰 테이블 자체 스크롤 생성 (원하는 높이로 조절 가능) */
+  
+ .tbl-scroll { 
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: calc(100vh - 220px);
 }
+ 
   table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 780px; }
-  thead th { 
+ 
+ thead th { 
   background: var(--surface2); 
   color: var(--text2); 
   font-weight: 600; 
@@ -184,6 +189,7 @@ header h1 {
   top: 0; /* 57px에서 0으로 변경: 이제 .tbl-scroll 안에서 딱 붙습니다 */
   z-index: 10; 
 }
+ 
   tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
   tbody tr:last-child { border-bottom: none; }
   tbody tr:hover { background: #fafaf8; }
@@ -265,7 +271,7 @@ header h1 {
   <div class="header-left">
     <span class="hospital-emoji">🏥</span>
     <h1>타과 의뢰 환자 명단</h1>
-    <button class="version-badge" id="version-badge">v5.0</button>
+    <button class="version-badge" id="version-badge">v5.1</button>
     <div class="header-date" id="header-sub">로딩 중...</div>
   </div>
   
