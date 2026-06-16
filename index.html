@@ -177,7 +177,7 @@ table { width: 100%; border-collapse: collapse; font-size: 13px; }
     <div class="header-left">
       <span class="hospital-emoji">🏥</span>
       <h1>타과 의뢰 환자 명단</h1>
-      <button class="version-badge" id="version-badge">버전7.5</button>
+      <button class="version-badge" id="version-badge">v8.0</button>
       <div class="header-date" id="header-sub"></div>
     </div>
     <div class="user-info">
@@ -359,7 +359,8 @@ function render() {
     const isNotYet = r.status === 'not yet';
 const regHtml = isActive ? `<span class="reg-active">${esc(r.reg)}</span>` : isNotYet ? `<span style="color:var(--danger);background:var(--danger-bg);padding:2px 6px;border-radius:5px;font-weight:700;font-family:var(--mono);font-size:12px">${esc(r.reg)}</span>` : `<span style="color:var(--text2)">${esc(r.reg)}</span>`;
 
-    return `<tr>
+    const rowStyle = r.status === 'end' ? 'background:#f5f5f5;opacity:0.7;' : r.status === 'not yet' ? 'background:#fff5f5;' : '';
+    return `<tr style="${rowStyle}">
       <td class="date-cell">${esc(r.date)}</td>
       <td class="reg-cell">${regHtml}</td>
       <td style="white-space:nowrap"><strong>${esc(r.name)}</strong></td>
