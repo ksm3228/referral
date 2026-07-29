@@ -433,7 +433,8 @@ onAuthStateChanged(auth, async (user) => {
     document.getElementById('user-photo').src = user.photoURL || '';
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app-screen').style.display = 'block';
-    onValue(ref(db, 'referral'), (snap) => {
+    async function loadData() {
+      const snap = await get(ref(db, 'referral'));
       allData = [];
       if (snap.exists()) {
         snap.forEach(child => allData.push({ _key: child.key, ...child.val() }));
@@ -441,9 +442,10 @@ onAuthStateChanged(auth, async (user) => {
       } else {
         DEFAULT_DATA.forEach(row => push(ref(db, 'referral'), row));
       }
-      console.log('데이터 실시간 로드 완료:', allData.length, '개');
+      console.log('데이터 로드 완료:', allData.length, '개');
       render();
-    });
+    }
+    loadData();
     initVersionBadge();
   } else {
     document.getElementById('login-screen').style.display = 'flex';
