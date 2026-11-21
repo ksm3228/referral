@@ -119,6 +119,7 @@
   .header-left { flex-shrink: 1; flex-wrap: wrap; row-gap: 4px; min-width: 0; }
   .user-info { flex-wrap: wrap; min-width: 0; }
   .logout-btn, .header-actions .btn { white-space: nowrap; }
+  .btn:disabled { opacity:.4; cursor:default; }
 </style>
 </head>
 <body>
@@ -143,7 +144,7 @@
     <div class="header-left">
       <span class="hospital-emoji">🏥</span>
       <h1>타과의뢰/호스피스 의뢰서</h1>
-      <button class="version-badge" id="version-badge">v8.9</button>
+      <button class="version-badge" id="version-badge">v9.0</button>
       <div class="header-date" id="header-sub"></div>
     </div>
     <div class="user-info">
@@ -201,7 +202,8 @@
     <div class="ref-wrap">
       <div class="ref-actions">
         <button class="btn primary" id="ref-download">다운로드</button>
-        <button class="btn" id="ref-clear">내용모두삭제</button>
+        <button class="btn" id="ref-undo" disabled>이전으로 되돌리기</button>
+        <button class="btn" id="ref-clear" style="margin-left:auto">내용모두삭제</button>
       </div>
       <textarea id="ref-text" placeholder="복사한 의뢰 내용을 여기에 붙여넣으세요"></textarea>
     </div>
@@ -474,17 +476,25 @@ function showTab(t) {
 showTab('ref');
 document.getElementById('tab-list').addEventListener('click', () => showTab('list'));
 document.getElementById('tab-ref').addEventListener('click', () => showTab('ref'));
-const REF_KEY = 'referral_draft_text';
+const REF_KEY = 'referral_draft_text', REF_BAK = 'referral_draft_backup';
 (function() {
-  const t = document.getElementById('ref-text');
-  try { t.value = localStorage.getItem(REF_KEY) || ''; } catch (e) {}
+  const t = document.getElementById('ref-text'), u = document.getElementById('ref-undo');
+  try { t.value = localStorage.getItem(REF_KEY) || ''; u.disabled = !localStorage.getItem(REF_BAK); } catch (e) {}
   t.addEventListener('input', () => { try { localStorage.setItem(REF_KEY, t.value); } catch (e) {} });
+  document.getElementById('ref-clear').addEventListener('click', () => {
+    if (!t.value) return;
+    try { localStorage.setItem(REF_BAK, t.value); localStorage.removeItem(REF_KEY); } catch (e) {}
+    window._refBak = t.value; t.value = ''; u.disabled = false; t.focus();
+  });
+  u.addEventListener('click', () => {
+    let b = window._refBak;
+    try { b = localStorage.getItem(REF_BAK) || b; } catch (e) {}
+    if (!b) return;
+    t.value = b;
+    try { localStorage.setItem(REF_KEY, b); localStorage.removeItem(REF_BAK); } catch (e) {}
+    window._refBak = ''; u.disabled = true; t.focus();
+  });
 })();
-document.getElementById('ref-clear').addEventListener('click', () => {
-  const t = document.getElementById('ref-text'); t.value = '';
-  try { localStorage.removeItem(REF_KEY); } catch (e) {}
-  t.focus();
-});
 document.getElementById('ref-download').addEventListener('click', async () => {
   const text = document.getElementById('ref-text').value;
   if (!text.trim()) { showToast('의뢰 내용을 먼저 붙여넣어 주세요.', true); return; }
