@@ -114,6 +114,11 @@
   .ref-wrap { padding:12px; }
   .ref-actions { display:flex; gap:8px; margin-bottom:10px; }
   #ref-text { width:100%; min-height:60vh; padding:12px; border:1px solid var(--border); border-radius:8px; font-size:14px; line-height:1.6; font-family:inherit; resize:vertical; box-sizing:border-box; background:var(--surface); color:var(--text); }
+  html, body { overflow-x: hidden; max-width: 100%; }
+  header { flex-wrap: wrap; }
+  .header-left { flex-shrink: 1; flex-wrap: wrap; row-gap: 4px; min-width: 0; }
+  .user-info { flex-wrap: wrap; min-width: 0; }
+  .logout-btn, .header-actions .btn { white-space: nowrap; }
 </style>
 </head>
 <body>
@@ -138,7 +143,7 @@
     <div class="header-left">
       <span class="hospital-emoji">🏥</span>
       <h1>타과의뢰/호스피스 의뢰서</h1>
-      <button class="version-badge" id="version-badge">v8.6</button>
+      <button class="version-badge" id="version-badge">v8.7</button>
       <div class="header-date" id="header-sub"></div>
     </div>
     <div class="user-info">
