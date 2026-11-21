@@ -138,7 +138,7 @@
     <div class="header-left">
       <span class="hospital-emoji">🏥</span>
       <h1>타과의뢰/호스피스 의뢰서</h1>
-      <button class="version-badge" id="version-badge">v8.3</button>
+      <button class="version-badge" id="version-badge">v8.4</button>
       <div class="header-date" id="header-sub"></div>
     </div>
     <div class="user-info">
@@ -478,19 +478,22 @@ document.getElementById('ref-download').addEventListener('click', async () => {
   const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
   const d = new Date(), p = n => String(n).padStart(2,'0');
   const fname = `의뢰서_${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}.doc`;
-  if (!confirm('워드 파일을 USB 저장장치에 저장할까요?')) return;
-  if (typeof window.showSaveFilePicker !== 'function') {
-    showToast('이 브라우저는 USB 저장장치 직접 저장을 지원하지 않습니다. USB 연결을 확인하세요.', true);
+  if (typeof window.showSaveFilePicker === 'function') {
+    try {
+      const handle = await window.showSaveFilePicker({ suggestedName: fname, types: [{ description: 'Word 문서', accept: { 'application/msword': ['.doc'] } }] });
+      const w = await handle.createWritable(); await w.write(blob); await w.close();
+      showToast('저장되었습니다: ' + handle.name);
+    } catch (e) {
+      if (e && e.name === 'AbortError') return;
+      showToast('저장 실패: ' + (e && e.message ? e.message : '알 수 없는 오류'), true);
+    }
     return;
   }
-  try {
-    const handle = await window.showSaveFilePicker({ suggestedName: fname, types: [{ description: 'Word 문서', accept: { 'application/msword': ['.doc'] } }] });
-    const w = await handle.createWritable(); await w.write(blob); await w.close();
-    showToast('저장되었습니다.');
-  } catch (e) {
-    if (e && e.name === 'AbortError') return;
-    showToast('저장 실패: USB 저장장치가 삽입되어 있는지 확인하세요.', true);
-  }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = fname;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+  showToast('다운로드됨: ' + fname + ' (내 파일 > 다운로드 폴더 확인)');
 });
 </script>
 </body>
