@@ -143,7 +143,7 @@
     <div class="header-left">
       <span class="hospital-emoji">🏥</span>
       <h1>타과의뢰/호스피스 의뢰서</h1>
-      <button class="version-badge" id="version-badge">v8.8</button>
+      <button class="version-badge" id="version-badge">v8.9</button>
       <div class="header-date" id="header-sub"></div>
     </div>
     <div class="user-info">
@@ -471,6 +471,7 @@ function showTab(t) {
   document.getElementById('tab-list').classList.toggle('active', t==='list');
   document.getElementById('tab-ref').classList.toggle('active', t==='ref');
 }
+showTab('ref');
 document.getElementById('tab-list').addEventListener('click', () => showTab('list'));
 document.getElementById('tab-ref').addEventListener('click', () => showTab('ref'));
 const REF_KEY = 'referral_draft_text';
