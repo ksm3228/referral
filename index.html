@@ -138,7 +138,7 @@
     <div class="header-left">
       <span class="hospital-emoji">🏥</span>
       <h1>타과의뢰/호스피스 의뢰서</h1>
-      <button class="version-badge" id="version-badge">v8.5</button>
+      <button class="version-badge" id="version-badge">v8.6</button>
       <div class="header-date" id="header-sub"></div>
     </div>
     <div class="user-info">
@@ -241,6 +241,7 @@
   </div>
 </div>
 <div class="toast" id="toast"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut as fbSignOut, onAuthStateChanged }
@@ -473,14 +474,20 @@ document.getElementById('ref-clear').addEventListener('click', () => {
 document.getElementById('ref-download').addEventListener('click', async () => {
   const text = document.getElementById('ref-text').value;
   if (!text.trim()) { showToast('의뢰 내용을 먼저 붙여넣어 주세요.', true); return; }
-  const esc = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
-  const html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>의뢰서</title><style>body{font-family:"맑은 고딕","Malgun Gothic",sans-serif;font-size:11pt;line-height:1.6;}</style></head><body>' + esc + '</body></html>';
-  const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
+  if (!window.JSZip) { showToast('문서 생성 라이브러리를 불러오지 못했습니다. 새로고침 후 다시 시도하세요.', true); return; }
+  const x = t => t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const paras = text.replace(/\r\n?/g,'\n').split('\n').map(l => '<w:p><w:r><w:rPr><w:rFonts w:ascii="맑은 고딕" w:hAnsi="맑은 고딕" w:eastAsia="맑은 고딕"/><w:sz w:val="22"/></w:rPr><w:t xml:space="preserve">' + x(l) + '</w:t></w:r></w:p>').join('');
+  const zip = new JSZip();
+  zip.file('[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>');
+  zip.file('_rels/.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>');
+  zip.file('word/document.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>' + paras + '<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="708" w:footer="708" w:gutter="0"/></w:sectPr></w:body></w:document>');
+  const DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+  const blob = await zip.generateAsync({ type: 'blob', mimeType: DOCX });
   const d = new Date(), p = n => String(n).padStart(2,'0');
-  const fname = `의뢰서_${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}.doc`;
+  const fname = `의뢰서_${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}.docx`;
   if (typeof window.showSaveFilePicker === 'function') {
     try {
-      const handle = await window.showSaveFilePicker({ suggestedName: fname, types: [{ description: 'Word 문서', accept: { 'application/msword': ['.doc'] } }] });
+      const handle = await window.showSaveFilePicker({ suggestedName: fname, types: [{ description: 'Word 문서', accept: { [DOCX]: ['.docx'] } }] });
       const w = await handle.createWritable(); await w.write(blob); await w.close();
       showToast('저장되었습니다: ' + handle.name);
     } catch (e) {
@@ -490,7 +497,7 @@ document.getElementById('ref-download').addEventListener('click', async () => {
     return;
   }
   try {
-    const file = new File([blob], fname, { type: 'application/msword' });
+    const file = new File([blob], fname, { type: DOCX });
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
       await navigator.share({ files: [file] });
       showToast('공유 창에서 "파일에 저장"으로 저장 위치를 선택하세요.');
