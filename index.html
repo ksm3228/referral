@@ -6,7 +6,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#ffffff">
-<title>타과 의뢰 환자 명단</title>
+<title>타과의뢰/호스피스 의뢰서</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
@@ -108,12 +108,18 @@
     .stat-label { font-size: 10px; }
     .stat-num { font-size: 18px; }
   }
+  .tabs { display:flex; gap:6px; padding:8px 12px 0; border-bottom:1px solid var(--border); background:var(--surface); }
+  .tab-btn { padding:8px 14px; border:1px solid var(--border); border-bottom:none; border-radius:8px 8px 0 0; background:#f0eeea; color:var(--text2); font-size:13px; cursor:pointer; font-family:inherit; }
+  .tab-btn.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .ref-wrap { padding:12px; }
+  .ref-actions { display:flex; gap:8px; margin-bottom:10px; }
+  #ref-text { width:100%; min-height:60vh; padding:12px; border:1px solid var(--border); border-radius:8px; font-size:14px; line-height:1.6; font-family:inherit; resize:vertical; box-sizing:border-box; background:var(--surface); color:var(--text); }
 </style>
 </head>
 <body>
 <div id="login-screen">
   <div class="login-card">
-    <h1>타과 의뢰 환자 명단</h1>
+    <h1>타과의뢰/호스피스 의뢰서</h1>
     <p>접근 권한이 있는 계정으로 로그인하세요</p>
     <button class="google-btn" id="google-login-btn">
       <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -131,8 +137,8 @@
   <header>
     <div class="header-left">
       <span class="hospital-emoji">🏥</span>
-      <h1>타과 의뢰 환자 명단</h1>
-      <button class="version-badge" id="version-badge">v8.2</button>
+      <h1>타과의뢰/호스피스 의뢰서</h1>
+      <button class="version-badge" id="version-badge">v8.3</button>
       <div class="header-date" id="header-sub"></div>
     </div>
     <div class="user-info">
@@ -144,6 +150,11 @@
       </div>
     </div>
   </header>
+  <div class="tabs">
+    <button class="tab-btn active" id="tab-list">환자 명단</button>
+    <button class="tab-btn" id="tab-ref">환자 의뢰서</button>
+  </div>
+  <div id="pane-list">
   <div class="stats">
     <div class="stat"><div class="stat-label">전체</div><div class="stat-num total" id="s-total">0</div></div>
     <div class="stat"><div class="stat-label">추적 중</div><div class="stat-num still" id="s-still">0</div></div>
@@ -178,6 +189,16 @@
         </thead>
         <tbody id="tbody"></tbody>
       </table>
+    </div>
+  </div>
+  </div>
+  <div id="pane-ref" style="display:none">
+    <div class="ref-wrap">
+      <div class="ref-actions">
+        <button class="btn primary" id="ref-download">다운로드</button>
+        <button class="btn" id="ref-clear">내용모두삭제</button>
+      </div>
+      <textarea id="ref-text" placeholder="복사한 의뢰 내용을 여기에 붙여넣으세요"></textarea>
     </div>
   </div>
 </div>
@@ -437,6 +458,40 @@ document.getElementById('filter-status').addEventListener('change', render);
 document.getElementById('modal-overlay').addEventListener('click', e => { if(e.target===e.currentTarget) document.getElementById('modal-overlay').classList.remove('open'); });
 document.getElementById('version-modal').addEventListener('click', e => { if(e.target===e.currentTarget) document.getElementById('version-modal').classList.remove('open'); });
 document.addEventListener('keydown', e => { if(e.key==='Escape') { document.getElementById('modal-overlay').classList.remove('open'); document.getElementById('version-modal').classList.remove('open'); }});
+// ===== 환자 의뢰서 탭 =====
+function showTab(t) {
+  document.getElementById('pane-list').style.display = t==='list' ? '' : 'none';
+  document.getElementById('pane-ref').style.display = t==='ref' ? '' : 'none';
+  document.getElementById('tab-list').classList.toggle('active', t==='list');
+  document.getElementById('tab-ref').classList.toggle('active', t==='ref');
+}
+document.getElementById('tab-list').addEventListener('click', () => showTab('list'));
+document.getElementById('tab-ref').addEventListener('click', () => showTab('ref'));
+document.getElementById('ref-clear').addEventListener('click', () => {
+  const t = document.getElementById('ref-text'); t.value = ''; t.focus();
+});
+document.getElementById('ref-download').addEventListener('click', async () => {
+  const text = document.getElementById('ref-text').value;
+  if (!text.trim()) { showToast('의뢰 내용을 먼저 붙여넣어 주세요.', true); return; }
+  const esc = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+  const html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>의뢰서</title><style>body{font-family:"맑은 고딕","Malgun Gothic",sans-serif;font-size:11pt;line-height:1.6;}</style></head><body>' + esc + '</body></html>';
+  const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
+  const d = new Date(), p = n => String(n).padStart(2,'0');
+  const fname = `의뢰서_${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}.doc`;
+  if (!confirm('워드 파일을 USB 저장장치에 저장할까요?')) return;
+  if (typeof window.showSaveFilePicker !== 'function') {
+    showToast('이 브라우저는 USB 저장장치 직접 저장을 지원하지 않습니다. USB 연결을 확인하세요.', true);
+    return;
+  }
+  try {
+    const handle = await window.showSaveFilePicker({ suggestedName: fname, types: [{ description: 'Word 문서', accept: { 'application/msword': ['.doc'] } }] });
+    const w = await handle.createWritable(); await w.write(blob); await w.close();
+    showToast('저장되었습니다.');
+  } catch (e) {
+    if (e && e.name === 'AbortError') return;
+    showToast('저장 실패: USB 저장장치가 삽입되어 있는지 확인하세요.', true);
+  }
+});
 </script>
 </body>
 </html>
